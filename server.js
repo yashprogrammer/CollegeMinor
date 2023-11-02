@@ -59,11 +59,14 @@ const requireAuth = (req, res, next) => {
 
 function requireRole() {
   return (req, res, next) => {
-    console.log(req.user);
-    if (req.user.role === "student") {
+    const userRole = req.headers.authorization; // Retrieve the user's role from the request headers
+
+    // Check the user's role and perform authorization logic as needed
+    if (userRole === "teacher") {
+      next(); // Allow access to the next middleware or route
+    } else {
       return res.status(403).json({ message: "Unauthorized" });
     }
-    next();
   };
 }
 
@@ -255,32 +258,27 @@ app.post("/createcourse", async (req, res) => {
 //   }
 // });
 
-app.delete(
-  "/deletecourse/:courseId",
-  requireAuth,
-  requireRole(),
-  async (req, res) => {
-    const _id = req.params.courseId;
+app.delete("/deletecourse/:courseId", requireRole(), async (req, res) => {
+  const _id = req.params.courseId;
 
-    try {
-      const course = await Course.findById(_id);
+  try {
+    const course = await Course.findById(_id);
 
-      if (!course) {
-        return res.status(404).json({ error: "Course not found" });
-      }
-
-      await Course.findByIdAndDelete(_id);
-      res.json({ message: "Course deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting course:", error);
-      res.status(500).json({ error: "Failed to delete course" });
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
     }
+
+    await Course.findByIdAndDelete(_id);
+    res.json({ message: "Course deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting course:", error);
+    res.status(500).json({ error: "Failed to delete course" });
   }
-);
+});
 
 app.put(
   "/updatecourse/:courseId",
-  requireAuth,
+
   requireRole(),
   async (req, res) => {
     const _id = req.params.courseId;
